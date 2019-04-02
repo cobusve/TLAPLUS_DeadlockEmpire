@@ -9,32 +9,32 @@ process Left = 1
 variable temp = 0
 begin
 L1: while (TRUE) do
-L2:   if (mutex = 0 \/ (mutexOwner = 1)) then  \* these 3 steps atomically  == tryTake(mutex) recursively 
+L2:   if (mutex = 0 \/ (mutexOwner = 1)) then              \* Monitor.TryEnter(mutex);
          mutex := mutex + 1; 
          mutexOwner := 1;
-L3:      await (mutex3 = 0 \/ mutex3Owner = 1); 
+L3:      await (mutex3 = 0 \/ mutex3Owner = 1);            \* Monitor.Enter(mutex3);
          mutex3 := mutex3 + 1;
          mutex3Owner := 1;
-L4:      await (mutex = 0 \/ mutexOwner = 1); 
+L4:      await (mutex = 0 \/ mutexOwner = 1);               \* Monitor.Enter(mutex);
          mutex := mutex + 1; 
          mutexOwner := 1;
 L5:      skip;
-L6:      mutex:= mutex - 1;
+L6:      mutex:= mutex - 1;                                 \* Monitor.Exit(mutex);
          if (mutex = 0) then mutexOwner := 0; end if;
-L7:      await (mutex2 = 0 \/ mutex2Owner = 1); 
+L7:      await (mutex2 = 0 \/ mutex2Owner = 1);             \* Monitor.Enter(mutex2);
          mutex2 := mutex2 + 1; 
          mutex2Owner := 1;
 L8:      flag := FALSE;
-L9:      mutex2 := mutex2 - 1;
+L9:      mutex2 := mutex2 - 1;                              \* Monitor.Exit(mutex2);
          if (mutex2 = 0) then mutex2Owner := 0; end if;
-L10:     mutex3 := mutex3 - 1;
+L10:     mutex3 := mutex3 - 1;                              \* Monitor.Exit(mutex3);
          if (mutex3 = 0) then mutex3Owner := 0; end if;
       else 
-L11:     await (mutex2 = 0 \/ mutex2Owner = 1); 
+L11:     await (mutex2 = 0 \/ mutex2Owner = 1);             \* Monitor.Enter(mutex2);
          mutex2 := mutex2 + 1; 
          mutex2Owner := 1;
 L12:     flag := TRUE;
-L13:     mutex2:= mutex2 - 1;
+L13:     mutex2:= mutex2 - 1;                               \* Monitor.Exit(mutex2);
          if (mutex2 = 0) then mutex2Owner := 0; end if;
       end if;
     end while;
@@ -303,5 +303,5 @@ CriticalSections == {pc[1],pc[2]} /= {"L5", "R5b"}
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Apr 02 00:58:08 PDT 2019 by ejacobus
+\* Last modified Tue Apr 02 01:04:30 PDT 2019 by ejacobus
 \* Created Mon Apr 01 01:15:27 PDT 2019 by ejacobus
