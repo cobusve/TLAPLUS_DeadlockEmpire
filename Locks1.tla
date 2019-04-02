@@ -7,7 +7,7 @@ variables mutex = 0; i = 0;
 process Left = 0
 begin
 L1: while (TRUE) do
-L2:   await mutex = 0; mutex := 1;
+L2:   await mutex = 0; mutex := 1;  \* Await with an assignment atomically emulates a mutex
 L3:   i := i + 2;
 L4:   skip;
 L5:   if ( i = 5 ) then
@@ -121,5 +121,5 @@ Assertion == pc[0] /= "L6"
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Apr 01 01:26:53 PDT 2019 by ejacobus
+\* Last modified Mon Apr 01 18:41:38 PDT 2019 by ejacobus
 \* Created Mon Apr 01 01:15:27 PDT 2019 by ejacobus
