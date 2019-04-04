@@ -1,8 +1,24 @@
 ----------------------------- MODULE BossFight -----------------------------
-EXTENDS Naturals, TLC
+EXTENDS Naturals, TLC, Sequences
 
 (* --algorithm DeadlockEmpire
 variables  darkness = 0; evil = 0; fortressCounter = 0; sanctumMutex = 0; sanctumPulse = 0;
+
+
+macro Monitor_enter() begin
+    await sanctumMutex = 0;                    \*    Monitor.Enter(sanctum);
+    sanctumMutex := sanctumMutex + 1;
+end macro;
+
+macro Monitor_exit() begin
+    sanctumMutex := sanctumMutex - 1;          \*    Monitor.Exit(sanctum);
+end macro;
+
+macro Monitor_wait() begin
+    Monitor_exit();
+    await sanctumPulse = 1;                    \*    Monitor.Wait(sanctum);
+end macro;
+
 
 process Left = 1
 variable temp = 0
@@ -17,12 +33,9 @@ L7:     if ( fortressCounter > 0 ) then                \*  if (fortress.Wait(500
             fortressCounter := fortressCounter - 1;
 L8:         await ( fortressCounter > 0 );             \*    fortress.Wait();
             fortressCounter := fortressCounter - 1;
-L9:         await sanctumMutex = 0;                    \*    Monitor.Enter(sanctum);
-            sanctumMutex := sanctumMutex + 1;
-L10:        sanctumMutex := sanctumMutex - 1;          \*    Released during wait
-L11:        await sanctumPulse = 1;                    \*    Monitor.Wait(sanctum);
-L12:        await sanctumMutex = 0;                    \*    Monitor.Enter(sanctum);
-            sanctumMutex := sanctumMutex + 1;
+L9:         Monitor_enter();
+L10:        Monitor_wait();
+L12:        Monitor_enter();
 L13:        skip;
 L14:        sanctumMutex := sanctumMutex - 1;          \*    Monitor.Exit(sanctum);
         end if;
@@ -40,22 +53,21 @@ R3:   darkness := temp;
 R4:   temp := evil + 1;
 R5:   evil := temp;
 R6:   if ( darkness /= 2 /\ evil = 2 ) then     \* if (darkness != 2 && evil == 2)
-R9:         await sanctumMutex = 0;             \*    Monitor.Enter(sanctum)
-            sanctumMutex := sanctumMutex + 1;
-R10:        sanctumPulse := 1;                  \*    Monitor.Pulse(sanctum)
-R11:        sanctumPulse := 0;
-R12:        sanctumMutex := sanctumMutex - 1;   \*    Monitor.Exit(sanctum);
-R13:        skip;
+R7:     Monitor_enter();
+R8:     sanctumPulse := 1;                      \*    Monitor.Pulse(sanctum)
+R9:     sanctumPulse := 0;
+R10:    Monitor_exit();
+R11:    skip;
       end if;
-R14:  fortressCounter := fortressCounter + 1;
-R15:  darkness := 0;
-R16:  evil := 0;
+R12:  fortressCounter := fortressCounter + 1;
+R13:  darkness := 0;
+R14:  evil := 0;
     end while;
 end process;
-    
+
 end algorithm *)
 \* BEGIN TRANSLATION
-\* Process variable temp of process Left at line 8 col 10 changed to temp_
+\* Process variable temp of process Left at line 24 col 10 changed to temp_
 VARIABLES darkness, evil, fortressCounter, sanctumMutex, sanctumPulse, pc, 
           temp_, temp
 
@@ -136,15 +148,10 @@ L9 == /\ pc[1] = "L9"
 
 L10 == /\ pc[1] = "L10"
        /\ sanctumMutex' = sanctumMutex - 1
-       /\ pc' = [pc EXCEPT ![1] = "L11"]
-       /\ UNCHANGED << darkness, evil, fortressCounter, sanctumPulse, temp_, 
-                       temp >>
-
-L11 == /\ pc[1] = "L11"
        /\ sanctumPulse = 1
        /\ pc' = [pc EXCEPT ![1] = "L12"]
-       /\ UNCHANGED << darkness, evil, fortressCounter, sanctumMutex, 
-                       sanctumPulse, temp_, temp >>
+       /\ UNCHANGED << darkness, evil, fortressCounter, sanctumPulse, temp_, 
+                       temp >>
 
 L12 == /\ pc[1] = "L12"
        /\ sanctumMutex = 0
@@ -165,8 +172,8 @@ L14 == /\ pc[1] = "L14"
        /\ UNCHANGED << darkness, evil, fortressCounter, sanctumPulse, temp_, 
                        temp >>
 
-Left == L1 \/ L2 \/ L3 \/ L4 \/ L5 \/ L6 \/ L7 \/ L8 \/ L9 \/ L10 \/ L11
-           \/ L12 \/ L13 \/ L14
+Left == L1 \/ L2 \/ L3 \/ L4 \/ L5 \/ L6 \/ L7 \/ L8 \/ L9 \/ L10 \/ L12
+           \/ L13 \/ L14
 
 R1 == /\ pc[2] = "R1"
       /\ pc' = [pc EXCEPT ![2] = "R2"]
@@ -269,5 +276,5 @@ CriticalSections == {pc[1],pc[2]} /= {"L13", "R13"}
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Apr 02 20:19:03 PDT 2019 by ejacobus
+\* Last modified Wed Apr 03 17:10:17 PDT 2019 by ejacobus
 \* Created Mon Apr 01 01:15:27 PDT 2019 by ejacobus
